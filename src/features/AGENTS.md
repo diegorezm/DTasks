@@ -21,7 +21,7 @@ src/features/<name>/
 ├── <name>.server.ts    # TanStack Start server functions (createServerFn)
 ├── <name>.types.ts     # Local types and Zod schemas for this feature
 ├── components/         # React components scoped to this feature
-│   └── FeatureThing.tsx
+│   └── feature-thing.tsx
 └── hooks/              # React hooks scoped to this feature (TanStack Query hooks)
     └── use-feature-thing.ts
 ```
