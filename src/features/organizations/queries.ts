@@ -1,12 +1,12 @@
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { and, eq } from "drizzle-orm";
-import type * as schema from "~/db/schema";
+import type * as schema from "@/db/schema";
 import {
   organizations,
   organizationMembers,
   roles,
   rolePermissions,
-} from "~/db/schema";
+} from "@/db/schema";
 
 type DB = DrizzleD1Database<typeof schema>;
 

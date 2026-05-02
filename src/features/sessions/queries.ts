@@ -1,7 +1,7 @@
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { eq } from "drizzle-orm";
-import type * as schema from "~/db/schema";
-import { sessions } from "~/db/schema";
+import type * as schema from "@/db/schema";
+import { sessions } from "@/db/schema";
 
 type DB = DrizzleD1Database<typeof schema>;
 
