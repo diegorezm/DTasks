@@ -18,7 +18,8 @@
 		{
 			"binding": "DB",
 			"database_name": "dtasks-db",
-			"database_id": "41c8efc4-009f-43e6-ad88-d2cf7679a092"
+			"database_id": "41c8efc4-009f-43e6-ad88-d2cf7679a092",
+			"migrations_dir": "./drizzle"
 		}
 	],
 	/**

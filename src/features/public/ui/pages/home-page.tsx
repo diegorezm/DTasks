@@ -1,271 +1,399 @@
-import { Link } from "@tanstack/react-router";
-import { ArrowRight, CheckCheck, Circle } from "lucide-react";
+import {
+	Bell,
+	CheckCircle2,
+	Circle,
+	Clock,
+	FolderKanban,
+	LayoutGrid,
+	Link2,
+	ShieldCheck,
+	Zap,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Navbar } from "#/features/public/ui/components/navbar";
 
-const STATS = [
-	{ value: "100%", label: "Free to use" },
-	{ value: "<50ms", label: "Response time" },
-	{ value: "0", label: "Distractions" },
-];
+// ─── Inline UI data ────────────────────────────────────────────────────────
 
-const TASKS = [
-	{ label: "Design new onboarding flow", done: true },
-	{ label: "Fix API timeout on /tasks", done: true },
-	{ label: "Write release notes for v2", done: false },
-	{ label: "Review pull request #41", done: false },
-];
-
-const PORTAL_FEATURES = [
+const kanbanColumns = [
 	{
-		title: "Customizable",
-		body: "Set your own page name, description, and branding.",
+		label: "Backlog",
+		tasks: [
+			{ title: "Define brand guidelines", tag: "Design" },
+			{ title: "Set up staging environment", tag: "Dev" },
+		],
 	},
 	{
-		title: "Shareable link",
-		body: "One URL your clients can bookmark and return to.",
+		label: "In Progress",
+		tasks: [
+			{ title: "Build landing page", tag: "Dev" },
+			{ title: "Write onboarding copy", tag: "Content" },
+		],
 	},
 	{
-		title: "Zero friction",
-		body: "Clients submit without creating an account.",
-	},
-	{
-		title: "Unified queue",
-		body: "Tickets and your own tasks live in the same place.",
+		label: "Done",
+		tasks: [
+			{ title: "Kickoff call with client", tag: "Strategy" },
+			{ title: "Wireframes approved", tag: "Design" },
+		],
 	},
 ];
 
-const PORTAL_CHECKLIST = [
-	"Custom page title and description",
-	"Your own slug: dtasks.app/your-name",
-	"Tickets arrive directly in your task queue",
-	"Clients need no account to submit",
+const features = [
+	{
+		icon: <FolderKanban className="h-5 w-5" />,
+		title: "Multi-project workspace",
+		description:
+			"Manage every client engagement from one dashboard. Switch between projects in seconds without losing context.",
+	},
+	{
+		icon: <LayoutGrid className="h-5 w-5" />,
+		title: "Kanban boards",
+		description:
+			"Drag tasks across Backlog, In Progress, and Done. Simple enough for a solo freelancer, powerful enough for a 20-person studio.",
+	},
+	{
+		icon: <Link2 className="h-5 w-5" />,
+		title: "Customer portal",
+		description:
+			"Share a single link with your client. They see real-time progress without creating an account or touching your workspace.",
+	},
+	{
+		icon: <ShieldCheck className="h-5 w-5" />,
+		title: "Granular permissions",
+		description:
+			"Choose exactly what each client sees — tasks, statuses, comments, or nothing at all. You stay in control.",
+	},
+	{
+		icon: <Bell className="h-5 w-5" />,
+		title: "Client notifications",
+		description:
+			"Automatically notify clients when milestones are hit or tasks move to Done. Fewer status-update emails, more trust.",
+	},
+	{
+		icon: <Zap className="h-5 w-5" />,
+		title: "Fast & lightweight",
+		description:
+			"No bloat, no feature creep. DTasks loads fast, stays out of your way, and respects your time.",
+	},
+];
+
+const portalBullets = [
+	"Shareable link — no client account or login needed",
+	"You control exactly which tasks and statuses are visible",
+	"Clients can leave comments and mark deliverables as approved",
+];
+
+const portalTasks = [
+	{
+		label: "Homepage redesign",
+		status: "Done",
+		icon: <CheckCircle2 className="h-4 w-4 text-green-600" />,
+	},
+	{
+		label: "SEO audit",
+		status: "In Progress",
+		icon: <Clock className="h-4 w-4 text-yellow-500" />,
+	},
+	{
+		label: "Copy revisions",
+		status: "In Progress",
+		icon: <Clock className="h-4 w-4 text-yellow-500" />,
+	},
+	{
+		label: "Performance tuning",
+		status: "Backlog",
+		icon: <Circle className="h-4 w-4 text-muted-foreground" />,
+	},
+];
+
+const pricingTiers = [
+	{
+		name: "Solo",
+		price: "Free",
+		sub: "For freelancers just getting started",
+		features: [
+			"Up to 2 active projects",
+			"Kanban boards",
+			"1 client portal link",
+			"Basic task management",
+		],
+		cta: "Get started free",
+		highlight: false,
+	},
+	{
+		name: "Studio",
+		price: "$29",
+		sub: "Per month — for growing teams",
+		features: [
+			"Unlimited projects",
+			"Unlimited kanban boards",
+			"Unlimited client portals",
+			"Granular permissions",
+			"Client notifications",
+		],
+		cta: "Start free trial",
+		highlight: true,
+		badge: "Most popular",
+	},
+	{
+		name: "Agency",
+		price: "$79",
+		sub: "Per month — for larger operations",
+		features: [
+			"Everything in Studio",
+			"Team member roles",
+			"Priority support",
+			"Custom portal branding",
+			"Activity audit log",
+		],
+		cta: "Start free trial",
+		highlight: false,
+	},
 ];
 
 export function HomePage() {
 	return (
 		<div className="min-h-screen bg-background text-foreground">
-			{/* Floating pill navbar */}
-			<header className="pt-5 px-6">
-				<div className="mx-auto flex h-14 max-w-3xl items-center justify-between rounded-full border border-border bg-card px-3 pl-5 shadow-sm backdrop-blur-md">
-					<span className="font-semibold font-serif">DTasks</span>
-					<nav className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
-						<a
-							href="#product"
-							className="hover:text-foreground transition-colors"
-						>
-							Product
-						</a>
-						<a
-							href="#portal"
-							className="hover:text-foreground transition-colors"
-						>
-							Client portal
-						</a>
-					</nav>
-					<div className="flex items-center gap-2">
-						<Button variant="ghost" size="sm" className="rounded-full" asChild>
-							<Link to="/sign-in">Sign in</Link>
-						</Button>
-						<Button size="sm" className="rounded-full px-4" asChild>
-							<Link to="/sign-up">Get started</Link>
-						</Button>
-					</div>
-				</div>
-			</header>
+			<Navbar />
 
-			{/* Hero */}
-			<section
-				id="product"
-				className="relative max-w-5xl mx-auto px-6 pt-24 pb-16 overflow-hidden"
-			>
-				{/* Background blob using only Tailwind colors */}
-				<div className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full blur-3xl opacity-30 bg-primary" />
-
-				{/* Pill */}
-				<div className="flex justify-center mb-8">
-					<span className="inline-flex items-center gap-2 text-xs font-medium px-3 py-1 rounded-full border border-border bg-muted text-muted-foreground">
-						<span className="size-1.5 rounded-full bg-primary" />
-						Now in early access
-					</span>
-				</div>
-
-				{/* Headline */}
-				<h1 className="text-center text-5xl sm:text-7xl font-bold font-serif leading-[1.05] tracking-tight mb-6">
-					Your clients send tickets.{" "}
-					<span className="inline-block px-3 rounded-lg bg-secondary text-secondary-foreground">
-						You stay in control.
-					</span>
+			{/* ── Hero ── */}
+			<section className="mx-auto max-w-3xl px-4 pb-20 pt-24 text-center sm:px-6">
+				<Badge variant="secondary" className="mb-6">
+					Now in public beta
+				</Badge>
+				<h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl sm:leading-[1.15]">
+					Your clients see progress.
+					<br />
+					Not your inbox.
 				</h1>
-
-				<p className="text-center text-lg text-muted-foreground max-w-xl mx-auto mb-10">
-					Create a customizable portal page, share it with your clients, and
-					manage every incoming request or complaint from one clean queue.
+				<p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
+					DTasks gives agencies and freelance teams a shareable client portal —
+					so clients track project status in real time, without needing an
+					account.
 				</p>
-
-				<div className="flex justify-center gap-3 mb-16">
-					<Button size="lg" className="rounded-full px-6" asChild>
-						<Link to="/sign-up">
-							Start for free <ArrowRight className="ml-1 size-4" />
-						</Link>
-					</Button>
-					<Button
-						size="lg"
-						variant="outline"
-						className="rounded-full px-6"
-						asChild
-					>
-						<Link to="/sign-in">Sign in</Link>
+				<div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+					<Button size="lg">Start free trial</Button>
+					<Button size="lg" variant="outline">
+						See demo
 					</Button>
 				</div>
+			</section>
 
-				{/* Dual product preview */}
-				<div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
-					{/* Internal task queue */}
-					<div className="rounded-2xl border border-border bg-card overflow-hidden shadow-md">
-						<div className="px-4 py-3 border-b border-border bg-muted flex items-center gap-2">
-							<span className="size-2 rounded-full bg-red-400" />
-							<span className="size-2 rounded-full bg-yellow-400" />
-							<span className="size-2 rounded-full bg-green-400" />
-							<span className="ml-2 text-xs text-muted-foreground font-mono">
-								my tasks
-							</span>
-						</div>
-						<ul className="divide-y divide-border">
-							{TASKS.map((task) => (
-								<li
-									key={task.label}
-									className="flex items-center gap-3 px-4 py-3 text-sm"
-								>
-									{task.done ? (
-										<CheckCheck className="size-4 text-primary shrink-0" />
-									) : (
-										<Circle className="size-4 text-muted-foreground shrink-0" />
-									)}
-									<span
-										className={
-											task.done ? "line-through text-muted-foreground" : ""
-										}
-									>
-										{task.label}
-									</span>
-								</li>
-							))}
-						</ul>
+			{/* ── Kanban mock ── */}
+			<section className="mx-auto max-w-5xl px-4 pb-24 sm:px-6">
+				<div className="rounded-xl border border-border bg-muted/30 p-4 sm:p-6">
+					<div className="mb-4 flex items-center gap-2">
+						<span className="text-sm font-medium">
+							Acme Corp Website Redesign
+						</span>
+						<Badge variant="outline" className="text-xs">
+							Active
+						</Badge>
 					</div>
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+						{kanbanColumns.map((col) => (
+							<div key={col.label} className="rounded-lg bg-background p-3">
+								<p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+									{col.label}
+								</p>
+								<div className="flex flex-col gap-2">
+									{col.tasks.map((task) => (
+										<div
+											key={task.title}
+											className="rounded-md border border-border bg-card px-3 py-2.5 shadow-sm"
+										>
+											<p className="text-sm font-medium leading-snug">
+												{task.title}
+											</p>
+											<span className="mt-1 inline-block rounded-sm bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
+												{task.tag}
+											</span>
+										</div>
+									))}
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+			</section>
 
-					{/* Client portal mockup */}
-					<div className="rounded-2xl border border-border bg-card overflow-hidden shadow-md">
-						<div className="px-4 py-3 border-b border-border bg-muted flex items-center gap-2">
-							<span className="size-2 rounded-full bg-red-400" />
-							<span className="size-2 rounded-full bg-yellow-400" />
-							<span className="size-2 rounded-full bg-green-400" />
-							<span className="ml-2 text-xs text-muted-foreground font-mono">
-								acme — support
-							</span>
-						</div>
-						<div className="p-4 flex flex-col gap-3">
-							<p className="text-sm font-semibold">Acme Support</p>
-							<p className="text-xs text-muted-foreground">
-								Submit a request or complaint below.
+			{/* ── Features ── */}
+			<section id="features" className="mx-auto max-w-5xl px-4 py-24 sm:px-6">
+				<div className="mb-12 text-center">
+					<h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+						Everything your team needs
+					</h2>
+					<p className="mt-2 text-muted-foreground">
+						Built for the reality of agency work — not enterprise bloat.
+					</p>
+				</div>
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{features.map((f) => (
+						<Card
+							key={f.title}
+							className="rounded-xl border border-border shadow-none"
+						>
+							<CardHeader className="pb-2 pt-5">
+								<div className="mb-2 text-foreground">{f.icon}</div>
+								<CardTitle className="text-base">{f.title}</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<p className="text-sm leading-relaxed text-muted-foreground">
+									{f.description}
+								</p>
+							</CardContent>
+						</Card>
+					))}
+				</div>
+			</section>
+
+			{/* ── Portal spotlight ── */}
+			<section className="border-t border-border bg-muted/20 py-24">
+				<div className="mx-auto max-w-5xl px-4 sm:px-6">
+					<div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-center">
+						{/* Left */}
+						<div>
+							<h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+								A portal your clients
+								<br />
+								will actually use
+							</h2>
+							<p className="mt-3 text-muted-foreground">
+								Stop answering "where are we at?" messages. Send one link and
+								let the work speak for itself.
 							</p>
-							<div className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
-								Your name
+							<ul className="mt-6 flex flex-col gap-3">
+								{portalBullets.map((b) => (
+									<li
+										key={b}
+										className="flex items-start gap-2 text-sm text-foreground"
+									>
+										<CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
+										{b}
+									</li>
+								))}
+							</ul>
+							<div className="mt-8">
+								<Button>Create your portal</Button>
 							</div>
-							<div className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
-								Issue title
+						</div>
+						{/* Right — portal mock */}
+						<div className="rounded-xl border border-border bg-background p-5 shadow-sm">
+							<div className="mb-4 flex items-center justify-between">
+								<div>
+									<p className="text-xs text-muted-foreground">Client view</p>
+									<p className="text-sm font-semibold">
+										Acme Corp — Q3 Website
+									</p>
+								</div>
+								<Badge variant="secondary" className="text-xs">
+									Read-only
+								</Badge>
 							</div>
-							<div className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground h-16">
-								Describe your issue...
+							<Separator className="mb-4" />
+							<div className="flex flex-col gap-2">
+								{portalTasks.map((task) => (
+									<div
+										key={task.label}
+										className="flex items-center justify-between rounded-md border border-border px-3 py-2.5"
+									>
+										<div className="flex items-center gap-2">
+											{task.icon}
+											<span className="text-sm">{task.label}</span>
+										</div>
+										<span className="text-xs text-muted-foreground">
+											{task.status}
+										</span>
+									</div>
+								))}
 							</div>
-							<Button size="sm" className="rounded-full w-full text-xs">
-								Submit ticket
-							</Button>
+							<div className="mt-4 rounded-md bg-muted/40 p-3">
+								<p className="text-xs font-medium text-muted-foreground">
+									Client comment
+								</p>
+								<p className="mt-0.5 text-sm">
+									"Homepage looks great — approved ✓"
+								</p>
+							</div>
 						</div>
 					</div>
 				</div>
 			</section>
 
-			{/* Stats bar */}
-			<section className="border-y border-border my-8">
-				<div className="max-w-5xl mx-auto px-6 py-10 grid grid-cols-3 gap-4">
-					{STATS.map((s) => (
-						<div key={s.label} className="flex flex-col items-center gap-1">
-							<span className="text-3xl font-bold font-serif">{s.value}</span>
-							<span className="text-xs text-muted-foreground uppercase tracking-widest">
-								{s.label}
-							</span>
+			{/* ── Pricing ── */}
+			<section id="pricing" className="mx-auto max-w-5xl px-4 py-24 sm:px-6">
+				<div className="mb-12 text-center">
+					<h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+						Simple, honest pricing
+					</h2>
+					<p className="mt-2 text-muted-foreground">
+						No per-seat surprises. Pick a plan and ship.
+					</p>
+				</div>
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+					{pricingTiers.map((tier) => (
+						<div
+							key={tier.name}
+							className={`relative flex flex-col rounded-xl border p-6 ${tier.highlight ? "border-foreground shadow-sm" : "border-border"
+								}`}
+						>
+							{tier.badge && (
+								<Badge className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs">
+									{tier.badge}
+								</Badge>
+							)}
+							<p className="text-base font-semibold">{tier.name}</p>
+							<p className="mt-1 text-xs text-muted-foreground">{tier.sub}</p>
+							<div className="my-4">
+								<span className="text-3xl font-bold">{tier.price}</span>
+								{tier.price !== "Free" && (
+									<span className="ml-1 text-sm text-muted-foreground">
+										/mo
+									</span>
+								)}
+							</div>
+							<Separator className="mb-4" />
+							<ul className="mb-6 flex flex-col gap-2">
+								{tier.features.map((f) => (
+									<li
+										key={f}
+										className="flex items-center gap-2 text-sm text-muted-foreground"
+									>
+										<CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-foreground" />
+										{f}
+									</li>
+								))}
+							</ul>
+							<Button
+								className="mt-auto"
+								variant={tier.highlight ? "default" : "outline"}
+							>
+								{tier.cta}
+							</Button>
 						</div>
 					))}
 				</div>
 			</section>
 
-			{/* Client portal feature section */}
-			<section id="portal" className="py-24 bg-muted/40">
-				<div className="max-w-5xl mx-auto px-6">
-					<p className="text-xs uppercase tracking-widest text-muted-foreground mb-10">
-						Client portal
-					</p>
-					<div className="grid sm:grid-cols-2 gap-16 items-start">
-						<div>
-							<h2 className="text-4xl font-bold font-serif leading-tight mb-4">
-								A page you can send to anyone.
-							</h2>
-							<p className="text-muted-foreground leading-relaxed mb-8">
-								Every DTasks account comes with a customizable support page you
-								can brand, share, and manage. Clients fill out a form — you get
-								a clean ticket in your queue. No email threads, no
-								back-and-forth.
-							</p>
-							<ul className="flex flex-col gap-3 text-sm text-muted-foreground">
-								{PORTAL_CHECKLIST.map((item) => (
-									<li key={item} className="flex items-center gap-2">
-										<CheckCheck className="size-4 text-primary shrink-0" />
-										{item}
-									</li>
-								))}
-							</ul>
-						</div>
-
-						{/* Bento tiles */}
-						<div className="grid grid-cols-2 gap-4">
-							{PORTAL_FEATURES.map((f) => (
-								<div
-									key={f.title}
-									className="rounded-2xl border border-border bg-card p-4"
-								>
-									<p className="font-semibold text-sm mb-1">{f.title}</p>
-									<p className="text-xs text-muted-foreground leading-relaxed">
-										{f.body}
-									</p>
-								</div>
-							))}
-						</div>
-					</div>
-				</div>
-			</section>
-
-			{/* CTA */}
-			<section className="max-w-5xl mx-auto px-6 py-24 text-center">
-				<h2 className="text-5xl font-bold font-serif mb-4">
-					Start collecting requests today.
-				</h2>
-				<p className="text-muted-foreground mb-8 max-w-sm mx-auto">
-					Set up your portal in minutes. No credit card required.
-				</p>
-				<Button size="lg" className="rounded-full px-8" asChild>
-					<Link to="/sign-up">
-						Create your account <ArrowRight className="ml-1 size-4" />
-					</Link>
-				</Button>
-			</section>
-
-			{/* Footer */}
+			{/* ── Footer ── */}
 			<footer className="border-t border-border py-8">
-				<div className="max-w-5xl mx-auto px-6 flex items-center justify-between text-xs text-muted-foreground">
-					<span className="font-semibold font-serif text-foreground">
-						DTasks
-					</span>
-					<span>{new Date().getFullYear()}</span>
+				<div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground sm:flex-row sm:px-6">
+					<span className="font-semibold text-foreground">DTasks</span>
+					<span>© {new Date().getFullYear()} DTasks. All rights reserved.</span>
+					<div className="flex gap-5">
+						{["Privacy", "Terms", "Twitter"].map((link) => (
+							<a
+								key={link}
+								href="/"
+								className="hover:text-foreground transition-colors"
+							>
+								{link}
+							</a>
+						))}
+					</div>
 				</div>
 			</footer>
 		</div>
