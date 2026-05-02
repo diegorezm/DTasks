@@ -185,6 +185,15 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+.dot-grid {
+  background-image: radial-gradient(circle, oklch(0.8822 0 0) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.dark .dot-grid {
+  background-image: radial-gradient(circle, oklch(0.2351 0.0115 91.7467) 1px, transparent 1px);
+}
+
 
 @layer base {
   * {

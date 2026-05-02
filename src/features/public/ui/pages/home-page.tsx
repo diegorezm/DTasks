@@ -156,7 +156,7 @@ const pricingTiers = [
 
 export function HomePage() {
 	return (
-		<div className="min-h-screen bg-background text-foreground">
+		<div className="dot-grid min-h-screen bg-background text-foreground">
 			<Navbar />
 
 			{/* ── Hero ── */}
