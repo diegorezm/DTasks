@@ -9,5 +9,3 @@ export const userInsertSchema = createInsertSchema(users, {
 });
 
 export const userUpdateSchema = userInsertSchema.partial();
-
-type UserUpdate = z.infer<typeof userUpdateSchema>;
