@@ -1,15 +1,9 @@
 import { env } from "cloudflare:workers";
-import type { ExtractTablesWithRelations } from "drizzle-orm";
-import { type DrizzleD1Database, drizzle } from "drizzle-orm/d1";
-import type { SQLiteTransaction } from "drizzle-orm/sqlite-core";
-import * as schema from "./schema.ts";
+import { drizzle } from "drizzle-orm/d1";
+import { relations, schema } from "./schemas";
 
-export const db = drizzle(env.DB, { schema });
+export const db = drizzle(env.DB, { schema, relations });
+
 export type DB =
-	| DrizzleD1Database<typeof schema>
-	| SQLiteTransaction<
-		"async",
-		D1Result<unknown>,
-		typeof schema,
-		ExtractTablesWithRelations<typeof schema>
-	>;
+	| typeof db
+	| Parameters<Parameters<typeof db.transaction>[0]>[0];
