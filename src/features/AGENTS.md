@@ -1,132 +1,161 @@
 # Features — Agent Guide
 
-All domain logic lives here. Each subdirectory is a self-contained feature module. Read this before creating or modifying any feature.
-
-## Existing Features
-
-As the project grows, each feature will be listed here with a one-line description. Keep this list up to date when adding a new feature.
+## Feature Table
 
 | Feature | Description |
 |---|---|
-| _(none yet)_ | |
+| auth | Email/password auth, sessions, users, accounts, organizations |
 
-## Feature Folder Structure
-
-Every feature follows this layout:
+## Directory Structure
 
 ```
 src/features/<name>/
-├── queries.ts        # Drizzle DB queries — only DB access lives here
-├── actions.ts        # TanStack Start server functions + Zod validation
-├── types.ts          # Zod schemas and inferred types for this feature
-├── hooks/            # TanStack Query hooks
-│   └── use-thing.ts
-└── ui/
-    ├── components/   # Reusable UI pieces scoped to this feature
-    │   └── thing-component.tsx
-    └── pages/        # Route-level page containers (imported by src/routes/)
-        └── thing-page.tsx
+├── models/           # Zod schemas + inferred types
+├── queries/          # Drizzle DB access — <entity>.queries.ts
+├── services/         # Business logic — <entity>.service.ts
+├── lib/              # Helpers reusable within this feature
+├── ui/
+│   ├── components/   # Feature-scoped reusable UI
+│   └── pages/        # Route-level containers
+├── actions.ts        # TanStack Start server functions
+└── hooks.ts          # TanStack Query hooks
 ```
 
-Not every file is required for every feature — only create what the feature actually needs. A simple read-only feature might only need `queries.ts`, `actions.ts`, and a page.
+Only create what the feature needs. A read-only feature may only need `queries/`, `actions.ts`, and a page.
 
-## Layer Responsibilities
+## Layer Rules
 
-### `queries.ts`
-
-Raw Drizzle queries. No business logic, no validation. Returns raw DB rows. Every function receives `db` as its first argument — never import the db client as a singleton here.
+### `models/`
+Zod schemas and inferred types. Always derive schemas from Drizzle tables using `createSelectSchema` / `createInsertSchema` from `drizzle-orm/zod`. Only create a schema from scratch (`z.object(...)`) when it represents an operation that has no corresponding table (e.g. a login DTO where no `logins` table exists).
 
 ```ts
-// Good
-export async function getIssueById(db: DrizzleD1Database, id: string) {
-  return db.select().from(issues).where(eq(issues.id, id)).get()
-}
+import { createInsertSchema, createSelectSchema } from "drizzle-orm/zod"
+import { z } from "zod"
+import { users } from "@/db/schemas/auth"
 
-// Bad — db imported as a global, logic mixed in
-import { db } from '~/db'
-export async function getIssue(id: string) { ... }
+// Derive from table — always do this for entities that map to a DB table
+export const userSelectSchema = createSelectSchema(users)
+export const userInsertSchema = createInsertSchema(users, {
+  email: z.email(),
+  name: (s) => s.min(1).max(100),
+  avatarUrl: z.url().optional(),
+})
+export type User = z.infer<typeof userSelectSchema>
+export type NewUser = z.infer<typeof userInsertSchema>
+
+// Create from scratch only when no table backs this schema
+export const signUpWithEmailSchema = z.object({
+  name: z.string().min(1).max(100),
+  email: z.string().email(),
+  password: z.string().min(8).max(100),
+})
+export type SignUpWithEmailDTO = z.infer<typeof signUpWithEmailSchema>
+```
+
+**Rules:**
+- Always use `createSelectSchema(table)` for select types
+- Always use `createInsertSchema(table, overrides)` for insert types
+- Never manually re-declare fields that already exist on the table
+- Only use `z.object(...)` for DTOs that have no backing table
+
+### `queries/<entity>.queries.ts`
+Raw Drizzle queries. No business logic. Always receives `db: DB` as first arg. Returns `tryCatch(...)` — never throws. Single-record queries unwrap `rows[0] ?? null` before returning.
+```ts
+export const USER_QUERIES = {
+  getByEmail: async (db: DB, email: string) => {
+    const { data: rows, error } = await tryCatch(
+      db.select().from(schema.users).where(eq(schema.users.email, email)).limit(1)
+    )
+    if (error) return { data: null, error }
+    return { data: rows[0] ?? null, error: null }
+  },
+  // Many-record queries return the tryCatch result directly (no unwrap)
+  getByUserId: async (db: DB, userId: string) => {
+    return tryCatch(db.select().from(schema.accounts).where(eq(schema.accounts.userId, userId)))
+  },
+}
+```
+
+### `services/<entity>.service.ts`
+Business logic and transaction boundaries. Calls queries and `db.transaction`. `tryCatch` wraps at this layer for operations that compose multiple queries.
+```ts
+export async function createSession(userId: string) {
+  const id = generateSecureRandomString()
+  const secret = generateSecureRandomString()
+  const secretHash = Buffer.from(await hashSecret(secret))
+  const { data, error } = await SESSION_QUERIES.create(db, { id, userId, secretHash, createdAt: ... })
+  if (error) return { data: null, error }
+  return { data: { ...data, token: `${id}.${secret}` }, error: null }
+}
 ```
 
 ### `actions.ts`
-
-TanStack Start server functions (`createServerFn`). Each function handles one operation: validates input with Zod, runs the query, and returns data to the client. This is the only place `createServerFn` is used.
-
+TanStack Start server functions only. Validates input, calls services/queries, updates session cookie. Never import `db` directly — use `DB` type passed through or imported singleton.
 ```ts
-export const createIssue = createServerFn({ method: 'POST' })
-  .validator(CreateIssueSchema)
-  .handler(async ({ data, context }) => {
-    const db = getDb(context.cloudflare.env.DB)
-    const existing = await getIssueById(db, data.id)
-    if (existing) throw new Error('Issue already exists')
-    return insertIssue(db, data)
+export const signUpWithEmail = createServerFn()
+  .inputValidator(signUpWithEmailSchema)
+  .handler(async ({ data }) => {
+    const appSession = await useAppSession()
+    const { data: user, error } = await USER_QUERIES.create(db, { ... })
+    if (error) return { data: null, error: "Failed to create user." }
+    await appSession.update({ token: session.token })
+    return { data: { user }, error: null }
   })
 ```
 
-Business logic that is too complex for a single handler can be extracted into a plain helper function in the same file — but only if it cannot be expressed cleanly as a query.
-
-### `types.ts`
-
-Zod schemas and inferred types local to this feature. One schema per operation — `CreateIssueSchema`, `UpdateIssueSchema` — never one large schema reused for everything. If a type is shared across two or more features, move it to `src/lib/types.ts`.
-
+### `hooks.ts`
+TanStack Query wrappers. `queryOptions` for reads, `useMutation` + `invalidateQueries` for writes.
 ```ts
-export const CreateIssueSchema = z.object({
-  title: z.string().min(1).max(255),
-  description: z.string().optional(),
-  categoryId: z.string().uuid(),
-  panelId: z.string().uuid(),
+export const currentSessionQuery = queryOptions({
+  queryKey: authKeys.session(),
+  queryFn: () => getCurrentSession(),
 })
 
-export type CreateIssueInput = z.infer<typeof CreateIssueSchema>
-```
-
-### `hooks/`
-
-TanStack Query hooks that wrap server function calls. One hook per logical data concern.
-
-```ts
-export function useIssues(panelId: string) {
-  return useQuery({
-    queryKey: ['issues', panelId],
-    queryFn: () => listIssues({ data: { panelId } }),
+export function useSignInWithEmail() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Parameters<typeof signInWithEmail>[0]['data']) => signInWithEmail({ data }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: authKeys.session() }),
   })
 }
 ```
 
-### `ui/components/`
-
-Reusable UI pieces that belong exclusively to this feature — cards, forms, badges, lists. If a component is used by two or more features, move it to `src/components/` (shared UI).
-
-- One component per file, kebab-case filename (`issue-card.tsx` exports `IssueCard`)
-- No `useEffect` — use hooks or route loaders for data
-- Components only receive data as props or read from hooks — no direct server function calls inside components
-
 ### `ui/pages/`
-
-Route-level page containers. Each page maps to one route in `src/routes/` — the route file imports and renders the page, nothing more.
-
-```tsx
-// src/routes/dashboard/issues/index.tsx — thin wrapper only
-import { IssuesPage } from '~/features/issues/ui/pages/issues-page'
-export const Route = createFileRoute('/dashboard/issues/')({ component: IssuesPage })
+Route-level containers. Imported by `src/routes/` — the route file does nothing but render the page.
+```ts
+// src/routes/auth/sign-in.tsx
+import { SignInPage } from '~/features/auth/ui/pages/sign-in-page'
+export const Route = createFileRoute('/auth/sign-in')({ component: SignInPage })
 ```
 
-Pages are responsible for composing components, calling hooks, and handling route-level loading/error states. They should not contain fine-grained UI logic — extract that into `ui/components/`.
+### `ui/components/`
+Feature-scoped reusable UI. One component per file, kebab-case. If used by 2+ features, move to `src/components/`.
+
+## Error Handling Pattern
+- **Queries** — always return `{ data, error }` via `tryCatch`. Never throw.
+- **Single-record queries** — unwrap `rows[0] ?? null` inside the query function before returning.
+- **Many-record queries** — return `tryCatch` result directly.
+- **Services** — check `if (error) return { data: null, error }` after every query call.
+- **Actions** — return user-facing error strings: `{ data: null, error: "Something went wrong." }`
+
+## Session Pattern
+`useAppSession()` from `@/features/auth/lib/app-session` wraps `useSession` from `@tanstack/react-start/server`. Call it at the top of any action that reads or writes the session cookie.
 
 ## Rules
+- **No cross-feature imports.** Shared logic goes in `src/lib/`.
+- **Routes are thin.** All logic lives in the feature.
+- **Queries never import db as a singleton** — always receive `db: DB` as first arg.
+- **Services own transactions** — `db.transaction(async (tx) => { ... })` never in queries or actions.
+- **One Zod schema per operation** in `models/`.
+- **Always derive entity schemas from Drizzle tables** using `createSelectSchema` / `createInsertSchema` from `drizzle-orm/zod`. Never manually redeclare fields that exist on the table. Only use `z.object(...)` for DTOs with no backing table.
+- **Update the feature table** at the top of this file when adding a feature.
 
-- **Never import from one feature into another feature directly.** If shared logic is needed, extract it into `src/lib/`
-- **Never put UI components in `actions.ts`** — server functions are server-only
-- **Routes are thin wrappers.** All real logic lives in the feature, not in `src/routes/`
-- **One Zod schema per operation** — `CreateIssueSchema`, `UpdateIssueSchema`, not one `IssueSchema` for everything
-- **Add your feature to the table at the top of this file** when you create it
-
-## Adding a New Feature — Checklist
-
-- [ ] Create `src/features/<name>/` folder
-- [ ] Add schema file(s) to `src/db/schema/` if new DB tables are needed
-- [ ] Run `pnpm db:generate` and review the migration SQL before applying
-- [ ] Write `types.ts` first — schemas define the contract for everything else
-- [ ] Write `queries.ts` for DB access
+## Adding a Feature — Checklist
+- [ ] Add DB tables to `src/db/schemas/` if needed, run `pnpm db:generate`
+- [ ] Write `models/` first — schemas define the contract, always derive from Drizzle tables
+- [ ] Write `queries/<entity>.queries.ts`
+- [ ] Write `services/<entity>.service.ts` for business logic
 - [ ] Write `actions.ts` for server functions
-- [ ] Add `hooks/` and `ui/` as needed
-- [ ] Update the feature table at the top of this file
+- [ ] Write `hooks.ts` for TanStack Query wrappers
+- [ ] Add `ui/` as needed
+- [ ] Update the feature table above
