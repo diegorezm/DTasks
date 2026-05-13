@@ -1,4 +1,3 @@
-// tests/features/auth/session.test.ts
 import { describe, it, expect, beforeEach } from "vitest";
 import { createTestDb, type TestDb } from "../../helpers/db";
 import { createSessionService } from "@/features/auth/services/session.services";
