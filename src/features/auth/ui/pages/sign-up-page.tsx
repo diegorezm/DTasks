@@ -31,7 +31,6 @@ export function SignUpPage() {
         <div className="flex justify-center">
           <Link to="/">
             <Logo variant="dark" className="size-24" />
-            asd
           </Link>
         </div>
 
