@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSignInWithEmail } from "@/features/auth/hooks";
+import { SocialsSignIn } from "../components/socials-signin";
 
 export function SignInPage() {
   const signIn = useSignInWithEmail();
@@ -71,6 +72,8 @@ export function SignInPage() {
                   autoComplete="current-password"
                 />
               </div>
+
+              <SocialsSignIn />
 
               {signIn.data?.error && (
                 <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">

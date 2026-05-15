@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSignUpWithEmail } from "@/features/auth/hooks";
+import { SocialsSignIn } from "../components/socials-signin";
 
 export function SignUpPage() {
   const signUp = useSignUpWithEmail();
@@ -79,6 +80,8 @@ export function SignUpPage() {
                   minLength={8}
                 />
               </div>
+
+              <SocialsSignIn />
 
               {signUp.data?.error && (
                 <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
